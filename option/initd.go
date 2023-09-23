@@ -1,15 +1,22 @@
 package option
 
 import (
+	"fmt"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/pelletier/go-toml"
+	"github.com/rifflock/lfshook"
+	"github.com/sirupsen/logrus"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"snds/model"
 	"strings"
+	"time"
 )
 
 var Option = new(model.Option)
+var Logger = logrus.New()
 
 func Init() error {
 
@@ -17,6 +24,12 @@ func Init() error {
 
 	//初始化目录
 	err := initAppDir()
+	if err != nil {
+		return err
+	}
+
+	//初始化日志框架
+	err = initLog()
 	if err != nil {
 		return err
 	}
@@ -35,17 +48,67 @@ func Init() error {
 
 /*
 *
+初始化 log
+flag分发使用自带 log 包
+其他使用 logrus
+*/
+func initLog() error {
+
+	Logger.SetLevel(logrus.InfoLevel)
+
+	// 创建一个Rotating Log的Hook
+	logPath := Option.LogPath + "/"
+	logFileName := "snds.log"
+
+	// 按日期分割日志文件，保留7天的日志
+	logWriter, _ := rotatelogs.New(
+		logPath+logFileName+".%Y%m%d",
+		rotatelogs.WithLinkName(logPath+logFileName),
+		rotatelogs.WithMaxAge(7*24*time.Hour),
+		rotatelogs.WithRotationTime(24*time.Hour),
+	)
+
+	// 创建一个Hook，将日志输出到Rotating Log
+	Logger.AddHook(lfshook.NewHook(
+		lfshook.WriterMap{
+			logrus.InfoLevel:  logWriter,
+			logrus.ErrorLevel: logWriter,
+		},
+		&logrus.JSONFormatter{},
+	))
+
+	return nil
+}
+
+/*
+*
 根据系统初始化命令行参数
 */
 func initCommand() {
 
 	if Option.Os == "darwin" || Option.Os == "linux" {
-		Option.Command.UnixCommand()
+		unixCommand()
 	}
 
 	if Option.Os == "windows" {
-		Option.Command.WinCommand()
+		winCommand()
 	}
+
+}
+
+func unixCommand() {
+
+	Option.Command.Run = exec.Command(
+		"nohup",
+		fmt.Sprintf("./%s", Option.RunName),
+		"-run",
+		"&",
+	)
+	//c.Run = fmt.Sprintf("nohup ./%s -run >%s.log  &", appName, appName)
+
+}
+
+func winCommand() {
 
 }
 
@@ -111,27 +174,38 @@ func initAppDir() error {
 
 	// 如果目录已存在跳过
 	_, err = os.Stat(Option.DataPath)
-	if err == nil {
-		return err
+	if err != nil {
+		err = os.Mkdir(Option.DataPath, 0755) // 0755 是目录权限
+		if err != nil {
+			return err
+		}
 	}
 
-	err = os.Mkdir(Option.DataPath, 0755) // 0755 是目录权限
+	_, err = os.Stat(Option.TempPath)
 	if err != nil {
-		return err
+		err = os.Mkdir(Option.TempPath, 0755) // 0755 是目录权限
+		if err != nil {
+			return err
+		}
 	}
 
-	err = os.Mkdir(Option.TempPath, 0755) // 0755 是目录权限
+	_, err = os.Stat(Option.ConfigPath)
 	if err != nil {
-		return err
-	}
-	err = os.Mkdir(Option.ConfigPath, 0755) // 0755 是目录权限
-	if err != nil {
-		return err
+		err = os.Mkdir(Option.ConfigPath, 0755) // 0755 是目录权限
+		if err != nil {
+			return err
+		}
 	}
 
-	err = os.Mkdir(Option.LogPath, 0755) // 0755 是目录权限
+	_, err = os.Stat(Option.ConfigPath)
 	if err != nil {
-		return err
+		err = os.Mkdir(Option.LogPath, 0755) // 0755 是目录权限
+		if err != nil {
+			return err
+		}
+		return nil
 	}
+
 	return nil
+
 }
