@@ -6,7 +6,6 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"errors"
-	"fmt"
 	"github.com/robfig/cron/v3"
 	"io"
 	"io/ioutil"
@@ -98,13 +97,11 @@ func (s *start) RunTask(t model.Task) error {
 		}
 		finallyFilePath = encryptPath
 
-		s.encryptFile(finallyFilePath, option.Option.TempPath+"123.zip", key)
+		s.encryptFile(finallyFilePath, option.Option.TempPath+"4123.zip", key)
 
-		option.Logger.Infof("任务：%s,%s次任务打包加密完成，密钥：%s", t.Name, now, string(key))
+		option.Logger.Infof("任务：%s,%s次任务打包加密完成，最终打包文件：%s,密钥：%s", t.Name, now, finallyFilePath, string(key))
 
 	}
-
-	fmt.Println(finallyFilePath)
 
 	return nil
 }
