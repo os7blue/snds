@@ -97,7 +97,10 @@ func (s *start) RunTask(t model.Task) error {
 		}
 		finallyFilePath = encryptPath
 
-		s.encryptFile(finallyFilePath, option.Option.TempPath+"4123.zip", key)
+		err = s.decryptFile(finallyFilePath, option.Option.TempPath+"4123.zip", key)
+		if err != nil {
+			return err
+		}
 
 		option.Logger.Infof("任务：%s,%s次任务打包加密完成，最终打包文件：%s,密钥：%s", t.Name, now, finallyFilePath, string(key))
 

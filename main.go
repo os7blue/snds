@@ -19,6 +19,8 @@ type flags struct {
 	Run bool
 	//option
 	Option bool
+	//Create
+	Create string
 }
 
 func main() {
@@ -39,9 +41,10 @@ func main() {
 	flag.BoolVar(&f.Stop, "stop", false, "stop service")
 	//Run
 	flag.BoolVar(&f.Run, "run", false, "run service,private flag")
-
 	//Option
 	flag.BoolVar(&f.Option, "option", false, "run service,private flag")
+	//create
+	flag.StringVar(&f.Create, "create", "", "create new config.go")
 
 	flag.Parse()
 
@@ -81,6 +84,10 @@ func main() {
 
 		// 将格式化的JSON格式的字节切片转换为字符串并打印
 		log.Println(string(jsonData))
+
+	}
+
+	if f.Create != "" {
 
 	}
 
