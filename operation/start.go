@@ -2,11 +2,8 @@ package operation
 
 import (
 	"archive/zip"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"errors"
 	"github.com/robfig/cron/v3"
+	"github.com/tjfoc/gmsm/sm4"
 	"io"
 	"io/ioutil"
 	"os"
@@ -76,7 +73,7 @@ func (s *start) RunTask(t model.Task) error {
 
 	//打包临时目录
 	zipPath := filepath.Join(option.Option.TempPath, tempFileName) + ".zip"
-	option.Logger.Infof("mt%s", zipPath)
+	option.Logger.Infof("临时目录%s", zipPath)
 	err = s.zipFolder(tempDir, zipPath)
 	if err != nil {
 		option.Logger.Errorf("任务：%s,%s次任务打包 zip 失败：%s", t.Name, now, err.Error())
@@ -88,7 +85,7 @@ func (s *start) RunTask(t model.Task) error {
 	finallyFilePath := zipPath
 	if t.Key != "" {
 		encryptPath := tempDir + ".snds"
-		key := make([]byte, 16) // 16字节密钥
+		key := []byte("1234567890123456")
 		err := s.encryptFile(zipPath, encryptPath, key)
 		if err != nil {
 			option.Logger.Errorf("任务：%s,%s次任务加密失败：%s", t.Name, now, err.Error())
@@ -96,8 +93,9 @@ func (s *start) RunTask(t model.Task) error {
 			return err
 		}
 		finallyFilePath = encryptPath
+		option.Logger.Info("密码" + string(key))
 
-		err = s.decryptFile(finallyFilePath, option.Option.TempPath+"4123.zip", key)
+		err = s.decryptFile(finallyFilePath, option.Option.TempPath+"/123.zip", key)
 		if err != nil {
 			return err
 		}
@@ -240,67 +238,49 @@ func (s *start) zipFolder(sourceDir, targetZipPath string) error {
 }
 
 func (s *start) encryptFile(inputFile, outputFile string, key []byte) error {
-	plaintext, err := os.ReadFile(inputFile)
+
+	option.Logger.Infof("开始加密，in:%s out:%s", inputFile, outputFile)
+
+	plaintext, err := ioutil.ReadFile(inputFile)
 	if err != nil {
 		return err
 	}
 
-	block, err := aes.NewCipher(key)
+	block, err := sm4.NewCipher(key)
 	if err != nil {
 		return err
 	}
 
-	nonce := make([]byte, 12)
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return err
-	}
+	ciphertext := make([]byte, len(plaintext))
+	block.Encrypt(ciphertext, plaintext)
 
-	aead, err := cipher.NewGCM(block)
+	err = ioutil.WriteFile(outputFile, ciphertext, 0644)
 	if err != nil {
-		return err
-	}
-
-	ciphertext := aead.Seal(nil, nonce, plaintext, nil)
-
-	encryptedFile, err := os.Create(outputFile)
-	if err != nil {
-		return err
-	}
-	defer encryptedFile.Close()
-
-	// 写入nonce到文件，以便解密时使用
-	if _, err := encryptedFile.Write(nonce); err != nil {
-		return err
-	}
-
-	// 写入加密后的数据到文件
-	if _, err := encryptedFile.Write(ciphertext); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *start) decryptFile(inputFilePath, outputFilePath string, key []byte) error {
-	ciphertext, err := ioutil.ReadFile(inputFilePath)
+func (s *start) decryptFile(inputFile, outputFile string, key []byte) error {
+	option.Logger.Infof("开始解密，in:%s out:%s", inputFile, outputFile)
+	ciphertext, err := ioutil.ReadFile(inputFile)
 	if err != nil {
 		return err
 	}
 
-	block, err := aes.NewCipher(key)
+	block, err := sm4.NewCipher(key)
 	if err != nil {
 		return err
 	}
 
-	if len(ciphertext) < aes.BlockSize {
-		return errors.New("ciphertext too short")
+	plaintext := make([]byte, len(ciphertext))
+	block.Decrypt(plaintext, ciphertext)
+
+	err = ioutil.WriteFile(outputFile, plaintext, 0644)
+	if err != nil {
+		return err
 	}
 
-	iv := ciphertext[:aes.BlockSize]
-	ciphertext = ciphertext[aes.BlockSize:]
-
-	stream := cipher.NewCFBDecrypter(block, iv)
-	stream.XORKeyStream(ciphertext, ciphertext)
-
-	return ioutil.WriteFile(outputFilePath, ciphertext, 0644)
+	return nil
 }
