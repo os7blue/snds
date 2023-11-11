@@ -1,6 +1,7 @@
 # snds
 支持定时任务加密同步到网盘的 cli 程序
 支持 linux macos win
-1232131
+
+ada
 
 123
