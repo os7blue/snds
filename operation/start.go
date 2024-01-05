@@ -2,6 +2,9 @@ package operation
 
 import (
 	"archive/zip"
+	"bytes"
+	"crypto/cipher"
+	"crypto/rand"
 	"github.com/robfig/cron/v3"
 	"github.com/tjfoc/gmsm/sm4"
 	"io"
@@ -85,7 +88,7 @@ func (s *start) RunTask(t model.Task) error {
 	finallyFilePath := zipPath
 	if t.Key != "" {
 		encryptPath := tempDir + ".snds"
-		key := []byte("1234567890123456")
+		key := "123456"
 		err := s.encryptFile(zipPath, encryptPath, key)
 		if err != nil {
 			option.Logger.Errorf("任务：%s,%s次任务加密失败：%s", t.Name, now, err.Error())
@@ -237,50 +240,73 @@ func (s *start) zipFolder(sourceDir, targetZipPath string) error {
 	return err
 }
 
-func (s *start) encryptFile(inputFile, outputFile string, key []byte) error {
-
-	option.Logger.Infof("开始加密，in:%s out:%s", inputFile, outputFile)
-
-	plaintext, err := ioutil.ReadFile(inputFile)
-	if err != nil {
-		return err
-	}
-
-	block, err := sm4.NewCipher(key)
-	if err != nil {
-		return err
-	}
-
-	ciphertext := make([]byte, len(plaintext))
-	block.Encrypt(ciphertext, plaintext)
-
-	err = ioutil.WriteFile(outputFile, ciphertext, 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
+// zeroPad 使用Zero Padding填充方法将数据填充到指定长度
+func (s *start) zeroPad(data []byte, blockSize int) []byte {
+	padLen := blockSize - (len(data) % blockSize)
+	padding := make([]byte, padLen)
+	return append(data, padding...)
 }
 
-func (s *start) decryptFile(inputFile, outputFile string, key []byte) error {
-	option.Logger.Infof("开始解密，in:%s out:%s", inputFile, outputFile)
-	ciphertext, err := ioutil.ReadFile(inputFile)
+// encryptFile 使用SM4算法对输入文件进行加密，并将结果写入输出文件
+func (s *start) encryptFile(inputFile, outputFile, key string) error {
+	// 在这里写入你的 SM4 密钥
+	rawKey := []byte("key")
+
+	// 使用Zero Padding填充方法将密钥填充到16字节
+	fullKey := s.zeroPad(rawKey, sm4.BlockSize)
+
+	plaintext, err := os.ReadFile(inputFile)
 	if err != nil {
 		return err
 	}
 
-	block, err := sm4.NewCipher(key)
+	block, err := sm4.NewCipher(fullKey)
 	if err != nil {
 		return err
 	}
 
-	plaintext := make([]byte, len(ciphertext))
-	block.Decrypt(plaintext, ciphertext)
+	// 使用Zero Padding填充方法将明文填充到合适的长度
+	plaintext = s.zeroPad(plaintext, sm4.BlockSize)
 
-	err = ioutil.WriteFile(outputFile, plaintext, 0644)
+	ciphertext := make([]byte, len(plaintext))
+	iv := make([]byte, sm4.BlockSize)
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return err
+	}
+
+	mode := cipher.NewCBCEncrypter(block, iv)
+	mode.CryptBlocks(ciphertext, plaintext)
+
+	return os.WriteFile(outputFile, append(iv, ciphertext...), 0644)
+}
+
+// decryptFile 使用SM4算法对输入文件进行解密，并将结果写入输出文件
+func (s *start) decryptFile(inputFile, outputFile, key string) error {
+	// 在这里写入你的 SM4 密钥
+	rawKey := []byte(key)
+
+	// 使用Zero Padding填充方法将密钥填充到16字节
+	fullKey := s.zeroPad(rawKey, sm4.BlockSize)
+
+	ciphertext, err := os.ReadFile(inputFile)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	block, err := sm4.NewCipher(fullKey)
+	if err != nil {
+		return err
+	}
+
+	// 提取初始化向量（IV）
+	iv := ciphertext[:sm4.BlockSize]
+	ciphertext = ciphertext[sm4.BlockSize:]
+
+	mode := cipher.NewCBCDecrypter(block, iv)
+	mode.CryptBlocks(ciphertext, ciphertext)
+
+	// 使用Zero Padding填充方法将明文去除填充
+	plaintext := bytes.TrimRight(ciphertext, string([]byte{0}))
+
+	return os.WriteFile(outputFile, plaintext, 0644)
 }

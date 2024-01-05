@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -8,7 +9,69 @@ import (
 	"os"
 	"snds/operation"
 	"snds/option"
+	"snds/util"
 )
+
+func main() {
+
+	scanner := bufio.NewScanner(os.Stdin)
+
+	var input string
+	for {
+
+		showMenu()
+		fmt.Print("请输入选项：")
+
+		scanner.Scan()
+		input = scanner.Text()
+
+		if scanner.Err() != nil {
+			fmt.Println(scanner.Err().Error())
+			os.Exit(1)
+		}
+
+		switch input {
+		case "0":
+			os.Exit(1)
+		case "1":
+			//todo start server
+			break
+		case "2":
+			//todo stop server
+			break
+		case "3":
+			//todo restart server
+			break
+		case "4":
+			//todo show config info
+			break
+		case "5":
+			//todo create new task
+
+			operation.Create.Create()
+
+			break
+		case "6":
+			//todo show help menu
+			break
+		default:
+
+		}
+
+	}
+
+}
+
+func showMenu() {
+	util.RcpUtil.RandomColorPrintln("1、启动服务")
+	util.RcpUtil.RandomColorPrintln("2、停止服务")
+	util.RcpUtil.RandomColorPrintln("3、重启服务")
+	util.RcpUtil.RandomColorPrintln("4、查看配置")
+	util.RcpUtil.RandomColorPrintln("5、新建任务")
+	util.RcpUtil.RandomColorPrintln("6、help")
+	util.RcpUtil.RandomColorPrintln("0、退出")
+
+}
 
 type flags struct {
 	//start service
@@ -20,10 +83,10 @@ type flags struct {
 	//option
 	Option bool
 	//Create
-	Create string
+	Create bool
 }
 
-func main() {
+func main1() {
 	err := option.Init()
 
 	if err != nil {
@@ -44,9 +107,15 @@ func main() {
 	//Option
 	flag.BoolVar(&f.Option, "option", false, "run service,private flag")
 	//create
-	flag.StringVar(&f.Create, "create", "", "create new config.go")
+	flag.BoolVar(&f.Create, "create", false, "create new config.go")
 
 	flag.Parse()
+
+	numFlags := flag.NFlag()
+	if numFlags != 1 {
+		log.Print("参数错误")
+		os.Exit(1)
+	}
 
 	option.Logger.Infof("cli调用，flag：%+v", f)
 
@@ -60,10 +129,8 @@ func main() {
 
 	}
 
-	//123
-
 	if f.Run {
-		err := operation.Operations.Start.StartTask()
+		err := operation.Start.StartTask()
 		if err != nil {
 			log.Printf("启动任务失败：%s", err.Error())
 			return
@@ -89,8 +156,8 @@ func main() {
 
 	}
 
-	if f.Create != "" {
-
+	if f.Create {
+		operation.Create.Create()
 	}
 
 }

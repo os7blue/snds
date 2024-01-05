@@ -2,10 +2,6 @@ package option
 
 import (
 	"fmt"
-	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
-	"github.com/pelletier/go-toml"
-	"github.com/rifflock/lfshook"
-	"github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +9,11 @@ import (
 	"snds/model"
 	"strings"
 	"time"
+
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/pelletier/go-toml"
+	"github.com/rifflock/lfshook"
+	"github.com/sirupsen/logrus"
 )
 
 var Option = new(model.Option)
@@ -57,13 +58,15 @@ func initLog() error {
 	Logger.SetLevel(logrus.InfoLevel)
 
 	// 创建一个Rotating Log的Hook
-	logPath := Option.LogPath + "/"
+	logPath := Option.LogPath
 	logFileName := "snds.log"
+
+	fullPath := filepath.Join(logPath, logFileName)
 
 	// 按日期分割日志文件，保留7天的日志
 	logWriter, _ := rotatelogs.New(
-		logPath+logFileName+".%Y%m%d",
-		rotatelogs.WithLinkName(logPath+logFileName),
+		fullPath+".%Y%m%d",
+		rotatelogs.WithLinkName(fullPath),
 		rotatelogs.WithMaxAge(7*24*time.Hour),
 		rotatelogs.WithRotationTime(24*time.Hour),
 	)
