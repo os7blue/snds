@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -9,69 +8,7 @@ import (
 	"os"
 	"snds/operation"
 	"snds/option"
-	"snds/util"
 )
-
-func main() {
-
-	scanner := bufio.NewScanner(os.Stdin)
-
-	var input string
-	for {
-
-		showMenu()
-		fmt.Print("请输入选项：")
-
-		scanner.Scan()
-		input = scanner.Text()
-
-		if scanner.Err() != nil {
-			fmt.Println(scanner.Err().Error())
-			os.Exit(1)
-		}
-
-		switch input {
-		case "0":
-			os.Exit(1)
-		case "1":
-			//todo start server
-			break
-		case "2":
-			//todo stop server
-			break
-		case "3":
-			//todo restart server
-			break
-		case "4":
-			//todo show config info
-			break
-		case "5":
-			//todo create new task
-
-			operation.Create.Create()
-
-			break
-		case "6":
-			//todo show help menu
-			break
-		default:
-
-		}
-
-	}
-
-}
-
-func showMenu() {
-	util.RcpUtil.RandomColorPrintln("1、启动服务")
-	util.RcpUtil.RandomColorPrintln("2、停止服务")
-	util.RcpUtil.RandomColorPrintln("3、重启服务")
-	util.RcpUtil.RandomColorPrintln("4、查看配置")
-	util.RcpUtil.RandomColorPrintln("5、新建任务")
-	util.RcpUtil.RandomColorPrintln("6、help")
-	util.RcpUtil.RandomColorPrintln("0、退出")
-
-}
 
 type flags struct {
 	//start service
@@ -86,7 +23,7 @@ type flags struct {
 	Create bool
 }
 
-func main1() {
+func main() {
 	err := option.Init()
 
 	if err != nil {
@@ -128,6 +65,8 @@ func main1() {
 		log.Println("启动后台启动")
 
 	}
+
+	//123
 
 	if f.Run {
 		err := operation.Start.StartTask()
