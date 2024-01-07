@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"snds/model"
+	"snds/util"
 	"strings"
 	"time"
 
@@ -34,6 +35,12 @@ func Init() error {
 	if err != nil {
 		return err
 	}
+
+	Option.DataPath = "/Users/codecv/data/code/workplace/go/snds/snds_data"
+	Option.AppPath = "/Users/codecv/data/code/workplace/go/snds"
+	Option.ConfigPath = "/Users/codecv/data/code/workplace/go/snds/snds_data/config"
+	Option.LogPath = "/Users/codecv/data/code/workplace/go/snds/snds_data/log"
+	Option.TempPath = "/Users/codecv/data/code/workplace/go/snds/snds_data/temp"
 
 	//初始化配置列表
 	err = initTask()
@@ -117,7 +124,7 @@ func winCommand() {
 
 func initTask() error {
 
-	//便利所有文件，帅选出 toml 文件并转化
+	//遍历所有文件，帅选出 toml 文件并转化
 
 	files, err := os.ReadDir(Option.ConfigPath)
 	if err != nil {
@@ -138,8 +145,9 @@ func initTask() error {
 			err = cfg.Unmarshal(&task)
 			if err != nil {
 				return err
-
 			}
+
+			*task.Name = util.FileUtil.GetFileNameWithoutExtension(file.Name())
 
 			tasks = append(tasks, task)
 

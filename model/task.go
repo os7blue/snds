@@ -14,11 +14,24 @@ type Task struct {
 	//需备份路径 文件或者文件夹路径
 	LocalPath []string
 	//任务名称（会用来命名备份文件）
-	Name string
-	//加密 key，和备份时日期结合加密（yyyyMMddhhmmss 格式），如果没填则不加密
+	Name *string
+	//加密 key，如果没填则不加密
 	Key string
 	//网盘类型
 	Type string
 	//cron 表达式
 	Cron string
+}
+
+func (Task) NameExist(tasks []Task, name string) bool {
+
+	for _, task := range tasks {
+
+		if *task.Name == name {
+			return true
+		}
+
+	}
+
+	return false
 }

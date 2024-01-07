@@ -1,5 +1,6 @@
 package util
 
 var (
-	RcpUtil rcp
+	GlobalUtil globalUtil
+	FileUtil   fileUtil
 )

@@ -54,9 +54,9 @@ func (s *start) RunTask(t model.Task) error {
 	currentTime := time.Now()
 	now := currentTime.Format("200601021504")
 
-	option.Logger.Infof("任务：%s,%s次任务开始执行", t.Name, now)
+	option.Logger.Infof("任务：%s,%s次任务开始执行", *t.Name, now)
 
-	tempFileName := t.Name + now
+	tempFileName := *t.Name + now
 	tempDir := filepath.Join(option.Option.TempPath, tempFileName)
 
 	//创建临时目录

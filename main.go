@@ -20,7 +20,7 @@ type flags struct {
 	//option
 	Option bool
 	//Create
-	Create bool
+	Create string
 }
 
 func main() {
@@ -44,12 +44,12 @@ func main() {
 	//Option
 	flag.BoolVar(&f.Option, "option", false, "run service,private flag")
 	//create
-	flag.BoolVar(&f.Create, "create", false, "create new config.go")
+	flag.StringVar(&f.Create, "create", "new", "create new config.go")
 
 	flag.Parse()
 
 	numFlags := flag.NFlag()
-	if numFlags != 1 {
+	if numFlags > 1 {
 		log.Print("参数错误")
 		os.Exit(1)
 	}
@@ -95,9 +95,18 @@ func main() {
 
 	}
 
-	if f.Create {
-		operation.Create.Create()
+	if f.Create != "new" {
+		err := operation.Create.Create(f.Create)
+		if err != nil {
+			log.Println(err.Error())
+			os.Exit(1)
+		}
 	}
+
+	flag.VisitAll(func(f *flag.Flag) {
+		fmt.Printf("Flag: %s, Value: %v, Default: %v, Usage: %s\n",
+			f.Name, f.Value, f.DefValue, f.Usage)
+	})
 
 }
 
