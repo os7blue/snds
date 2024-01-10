@@ -36,6 +36,12 @@ func Init() error {
 		return err
 	}
 
+	// Option.DataPath = "/Users/codecv/data/code/workplace/go/snds/snds_data"
+	// Option.AppPath = "/Users/codecv/data/code/workplace/go/snds"
+	// Option.ConfigPath = "/Users/codecv/data/code/workplace/go/snds/snds_data/config"
+	// Option.LogPath = "/Users/codecv/data/code/workplace/go/snds/snds_data/log"
+	// Option.TempPath = "/Users/codecv/data/code/workplace/go/snds/snds_data/temp"
+
 	Option.DataPath = "/Users/codecv/data/code/workplace/go/snds/snds_data"
 	Option.AppPath = "/Users/codecv/data/code/workplace/go/snds"
 	Option.ConfigPath = "/Users/codecv/data/code/workplace/go/snds/snds_data/config"
